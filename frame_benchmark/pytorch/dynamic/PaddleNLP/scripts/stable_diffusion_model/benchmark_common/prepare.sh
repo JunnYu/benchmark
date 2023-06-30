@@ -10,13 +10,13 @@ log_date=`date "+%Y.%m%d.%H%M%S"`
 
 unset https_proxy && unset http_proxy
 
-wget -c --no-proxy ${FLAG_TORCH_WHL_URL}
-tar_file_name=$(echo ${FLAG_TORCH_WHL_URL} | awk -F '/' '{print $NF}')
-dir_name=$(echo ${tar_file_name} | awk -F '.tar' '{print $1}')
-tar xf ${tar_file_name}
-rm -rf ${tar_file_name}
-pip config set global.index-url https://mirrors.ustc.edu.cn/pypi/web/simple
-pip install ${dir_name}/*
+# wget -c --no-proxy ${FLAG_TORCH_WHL_URL}
+# tar_file_name=$(echo ${FLAG_TORCH_WHL_URL} | awk -F '/' '{print $NF}')
+# dir_name=$(echo ${tar_file_name} | awk -F '.tar' '{print $1}')
+# tar xf ${tar_file_name}
+# rm -rf ${tar_file_name}
+# pip config set global.index-url https://mirrors.ustc.edu.cn/pypi/web/simple
+# pip install ${dir_name}/*
 pip install install accelerate==0.19.0 transformers==4.29.1 pandas numpy scipy datasets diffusers==0.16.1
 
 
@@ -30,5 +30,5 @@ wget https://paddlenlp.bj.bcebos.com/models/community/junnyu/develop/laion400m_d
 tar -zxvf laion400m_demo_data.tar.gz
 
 # 解决compile下报错的问题
-ln -s /usr/include/python3.10 /usr/local/include/ 
-echo "*******prepare benchmark end***********"
+# ln -s /usr/include/python3.10 /usr/local/include/ 
+# echo "*******prepare benchmark end***********"

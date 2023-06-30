@@ -50,7 +50,7 @@ class DataArguments:
         default="./data/filelist/train.filelist.list", metadata={"help": "The name of the file_list."}
     )
     resolution: int = field(
-        default=256,
+        default=512,
         metadata={
             "help": "The resolution for input images, all the images in the train/validation dataset will be resized to this resolution."
         },

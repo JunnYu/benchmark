@@ -30,8 +30,16 @@ class LatentDiffusionModel(nn.Module):
         self.vae = AutoencoderKL.from_pretrained(model_args.pretrained_model_name_or_path, subfolder="vae")
         self.vae.requires_grad_(False)
 
+        def fn_recursive_set_mem_eff(module: torch.nn.Module):
+            if hasattr(module, "set_use_memory_efficient_attention_xformers"):
+                module.set_use_memory_efficient_attention_xformers(False)
+
+            for child in module.children():
+                fn_recursive_set_mem_eff(child)
+        fn_recursive_set_mem_eff(self.vae)
+
         self.text_encoder = CLIPTextModel.from_pretrained(
-            model_args.pretrained_model_name_or_path, subfolder="text_encoder", use_cache=False
+            model_args.pretrained_model_name_or_path, subfolder="text_encoder",
         )
         self.text_encoder.requires_grad_(False)
         self.unet = UNet2DConditionModel.from_pretrained(model_args.pretrained_model_name_or_path, subfolder="unet")
@@ -51,12 +59,6 @@ class LatentDiffusionModel(nn.Module):
         self.unet.train()
         self.text_encoder.eval()
         self.vae.eval()
-
-        if model_args.enable_xformers_memory_efficient_attention:
-            print("Has scaled_dot_product_attention", hasattr(F, "scaled_dot_product_attention"))
-        else:
-            self.unet.disable_xformers_memory_efficient_attention()
-            print("Unet disable_xformers_memory_efficient_attention")
 
         for name, attn_processor in self.unet.attn_processors.items():
             print(name, attn_processor)

@@ -85,7 +85,7 @@ function _train(){
             --max_grad_norm -1 \
             --disable_tqdm True \
             --overwrite_output_dir True \
-            --optim adamw \
+            --optim adamw_torch \
             --tf32 True  \
             --benchmark True \
             --enable_xformers_memory_efficient_attention ${FLAG_XFORMERS} \
@@ -116,7 +116,7 @@ function _train(){
             --max_grad_norm -1 \
             --disable_tqdm True \
             --overwrite_output_dir True \
-            --optim adamw \
+            --optim adamw_torch \
             --tf32 True  \
             --benchmark True \
             --enable_xformers_memory_efficient_attention ${FLAG_XFORMERS} \

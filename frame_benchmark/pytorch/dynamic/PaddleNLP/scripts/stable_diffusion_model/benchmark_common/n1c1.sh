@@ -12,5 +12,3 @@ sed -i '/set\ -xe/d' run_benchmark.sh
 
 CUDA_VISIBLE_DEVICES=0 bash run_benchmark.sh ${model_item} ${bs_item} ${fp_item} ${run_process_type} ${run_mode} ${device_num} ${max_iter} ${num_workers} 2>&1;
 
-# export FLAG_XFORMERS="False"
-# export FLAG_RECOMPUTE="False"

@@ -1,5 +1,5 @@
 model_item=stable_diffusion_model
-bs_item=16
+bs_item=${BATCH_SIZE}
 fp_item=fp32
 run_process_type=SingleP
 run_mode=DP

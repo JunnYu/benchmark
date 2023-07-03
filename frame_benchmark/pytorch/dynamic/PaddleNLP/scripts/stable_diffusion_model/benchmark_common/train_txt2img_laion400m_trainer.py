@@ -31,11 +31,8 @@ def main():
     parser = HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     training_args.benchmark = model_args.benchmark
-
-    if model_args.enable_xformers_memory_efficient_attention:
-        pass
-    else:
-        # donot use scaled_dot_product_attention
+    # 如果开启sdp
+    if not model_args.enable_sdp:
         torch.nn.functional.scaled_dot_product_attention = None
 
     # Setup logging

@@ -36,6 +36,9 @@ class ModelArguments:
     enable_xformers_memory_efficient_attention: bool = field(
         default=False, metadata={"help": "enable_xformers_memory_efficient_attention."}
     )
+    enable_sdp: bool = field(
+        default=False, metadata={"help": "enable_sdp."}
+    )
     recompute: bool = field(
         default=False, metadata={"help": "recompute."}
     )

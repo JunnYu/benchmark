@@ -89,8 +89,10 @@ function _train(){
             --tf32 True  \
             --benchmark True \
             --enable_xformers_memory_efficient_attention ${FLAG_XFORMERS} \
+            --enable_sdp ${FLAG_SDP} \
             --recompute ${FLAG_RECOMPUTE} \
             --fp16 True \
+            --ddp_find_unused_parameters False \
             ${use_com_args}
             "
     else
@@ -120,8 +122,10 @@ function _train(){
             --tf32 True  \
             --benchmark True \
             --enable_xformers_memory_efficient_attention ${FLAG_XFORMERS} \
+            --enable_sdp ${FLAG_SDP} \
             --recompute ${FLAG_RECOMPUTE} \
             --fp16 False \
+            --ddp_find_unused_parameters False \
             ${use_com_args}
             "
     fi

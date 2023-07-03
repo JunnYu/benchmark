@@ -30,7 +30,7 @@ def analyze(model_item, log_file, res_log_file, device_num, bs, fp_item, run_pro
         if "ips:" in eachline:
             ips = float(eachline.split("ips: ")[1].split()[0])
             ips_lines.append(ips)
-    ips = np.mean(ips_lines[10:])
+    ips = np.mean(ips_lines[5:])
     ngpus = int(re.findall("\d+", device_num)[-1])
     ips *= ngpus
     run_mode = "DP"

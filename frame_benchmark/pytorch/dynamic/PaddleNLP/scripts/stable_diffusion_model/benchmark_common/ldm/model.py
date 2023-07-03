@@ -60,12 +60,16 @@ class LatentDiffusionModel(nn.Module):
         self.text_encoder.eval()
         self.vae.eval()
 
-        for name, attn_processor in self.unet.attn_processors.items():
-            print(name, attn_processor)
-
         if model_args.recompute:
             self.unet.enable_gradient_checkpointing()
             print("Unet enable_gradient_checkpointing")
+
+        if model_args.enable_xformers_memory_efficient_attention:
+            self.unet.enable_xformers_memory_efficient_attention()
+            self.vae.enable_xformers_memory_efficient_attention()
+
+        for name, attn_processor in self.unet.attn_processors.items():
+            print(name, attn_processor)
 
     def add_noise(
         self,
@@ -114,9 +118,8 @@ class LatentDiffusionModel(nn.Module):
                 device=latents.device,
             )
             noisy_latents = self.add_noise(latents, noise, timesteps)
-
-        self.text_encoder.eval()
-        encoder_hidden_states = self.text_encoder(input_ids)[0]
+            self.text_encoder.eval()
+            encoder_hidden_states = self.text_encoder(input_ids)[0]
         noise_pred = self.unet(noisy_latents, timesteps, encoder_hidden_states).sample
 
         # Get the target for loss depending on the prediction type

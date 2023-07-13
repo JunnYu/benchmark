@@ -15,13 +15,9 @@ export OUTPUT_DIR="bf16_torch"
 export BATCH_SIZE=64
 export MAX_ITER=200000
 
-node_num=${PADDLE_TRAINERS_NUM}
-num_workers=8
-node_rank=${PADDLE_TRAINER_ID}
-master_addr=${POD_0_IP}
 master_port=14233
 
-nohup python torchrun --nnodes ${node_num} --nproc_per_node ${num_workers} --node_rank ${node_rank} --master_addr ${master_addr} --master_port ${master_port} train_txt2img_laion400m_trainer.py \
+nohup torchrun --nnodes ${PADDLE_TRAINERS_NUM} --nproc_per_node 8 --node_rank ${PADDLE_TRAINER_ID} --master_addr ${POD_0_IP} --master_port ${master_port} train_txt2img_laion400m_trainer.py \
     --do_train \
     --output_dir ${OUTPUT_DIR} \
     --per_device_train_batch_size ${BATCH_SIZE} \

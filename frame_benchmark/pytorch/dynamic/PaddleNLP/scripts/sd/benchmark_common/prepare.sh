@@ -19,15 +19,20 @@ unset https_proxy && unset http_proxy
 # pip install ${dir_name}/*
 pip install install accelerate==0.20.3 transformers==4.30.2 pandas numpy scipy datasets diffusers==0.17.1
 
+rm -rf CompVis-stable-diffusion-v1-4-paddle-init-pt.tar.gz
+rm -rf CompVis-stable-diffusion-v1-4-paddle-init
+
+wget https://bj.bcebos.com/paddlenlp/models/community/CompVis/CompVis-stable-diffusion-v1-4-paddle-init-pt.tar.gz
+tar -zxvf CompVis-stable-diffusion-v1-4-paddle-init-pt.tar.gz
 
 # rm -rf CompVis-stable-diffusion-v1-4-pt.tar.gz
 # wget https://bj.bcebos.com/paddlenlp/models/community/CompVis/CompVis-stable-diffusion-v1-4-pt.tar.gz
-tar -zxvf CompVis-stable-diffusion-v1-4-pt.tar.gz
+# tar -zxvf CompVis-stable-diffusion-v1-4-pt.tar.gz
 
-rm -rf laion400m_demo_data.tar.gz
-rm -rf data
-wget https://paddlenlp.bj.bcebos.com/models/community/junnyu/develop/laion400m_demo_data.tar.gz
-tar -zxvf laion400m_demo_data.tar.gz
+# rm -rf laion400m_demo_data.tar.gz
+# rm -rf data
+# wget https://paddlenlp.bj.bcebos.com/models/community/junnyu/develop/laion400m_demo_data.tar.gz
+# tar -zxvf laion400m_demo_data.tar.gz
 
 # 解决compile下报错的问题
 # ln -s /usr/include/python3.10 /usr/local/include/ 

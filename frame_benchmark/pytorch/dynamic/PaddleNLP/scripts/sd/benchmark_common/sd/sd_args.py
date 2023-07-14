@@ -12,20 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
-from transformers.trainer import TrainingArguments
-import types
-from typing import List, Optional
 import math
+import types
+from dataclasses import dataclass, field
+from typing import List, Optional
+
 import torch
+from transformers.trainer import TrainingArguments
+
 __all__ = [
     "SDTrainingArguments",
     "SDModelArguments",
     "SDDataArguments",
 ]
 import os
+
 from transformers.utils.logging import get_logger
+
 logger = get_logger("transformers")
+
 
 def str2bool(v):
     if v.lower() in ("yes", "true", "t", "y", "1"):
@@ -38,7 +43,7 @@ def str2bool(v):
 
 @dataclass
 class SDTrainingArguments(TrainingArguments):
-    image_logging_steps: Optional[int] = field(default=1000, metadata={"help": "Log image every X steps."})
+    image_logging_steps: int = field(default=1000, metadata={"help": "Log image every X steps."})
     to_static: bool = field(default=False, metadata={"help": "Whether or not to_static"})
     recompute: bool = field(
         default=False,
@@ -69,7 +74,7 @@ class SDTrainingArguments(TrainingArguments):
     only_save_updated_model: bool = field(
         default=True, metadata={"help": "Whether or not save only_save_updated_model"}
     )
-    log_level : Optional[str] = field(
+    log_level: str = field(
         default="info",
         metadata={"help": "log_level."},
     )
@@ -110,6 +115,7 @@ class SDTrainingArguments(TrainingArguments):
 
         logger.info("")
 
+
 @dataclass
 class SDModelArguments:
     vae_name_or_path: Optional[str] = field(default=None, metadata={"help": "vae_name_or_path"})
@@ -123,16 +129,26 @@ class SDModelArguments:
         default="CompVis/stable-diffusion-v1-4",
         metadata={"help": "Path to pretrained model or model, when we want to resume training."},
     )
-    model_max_length: Optional[int] = field(default=77, metadata={"help": "Pretrained tokenizer model_max_length"})
-    noise_offset: Optional[int] = field(default=0, metadata={"help": "The scale of noise offset."})
-    prediction_type: Optional[str] = field(
+    model_max_length: int = field(default=77, metadata={"help": "Pretrained tokenizer model_max_length"})
+    prediction_type: str = field(
         default="epsilon",
         metadata={
             "help": "prediction_type, prediction type of the scheduler function, one of `epsilon` (predicting the noise of the diffusion process), `sample` (directly predicting the noisy sample`) or `v_prediction` (see section 2.4 https://imagen.research.google/video/paper.pdf)"
         },
     )
-    num_inference_steps: Optional[int] = field(default=50, metadata={"help": "num_inference_steps"})
+    num_inference_steps: int = field(default=50, metadata={"help": "num_inference_steps"})
     train_text_encoder: bool = field(default=False, metadata={"help": "Whether or not train text encoder"})
+
+    noise_offset: float = field(default=0, metadata={"help": "The scale of noise offset."})
+    snr_gamma: Optional[float] = field(
+        default=None,
+        metadata={
+            "help": "SNR weighting gamma to be used if rebalancing the loss. Recommended value is 5.0. More details here: https://arxiv.org/abs/2303.09556."
+        },
+    )
+    input_perturbation: Optional[float] = field(
+        default=0, metadata={"help": "The scale of input perturbation. Recommended 0.1."}
+    )
 
 
 @dataclass

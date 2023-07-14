@@ -12,22 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
-import time
 import os
+import time
+
+import torch
 from torch.utils.data import DataLoader
-from transformers.modeling_utils import  unwrap_model
-from transformers.trainer_callback import CallbackHandler
-from transformers.trainer import *
-from .text_image_pair_dataset import TextImagePair, worker_init_fn
-from transformers.utils.logging import get_logger
 from transformers.integrations import INTEGRATION_TO_CALLBACK, rewrite_logs
+from transformers.modeling_utils import unwrap_model
+from transformers.trainer import *
+from transformers.trainer_callback import CallbackHandler
+from transformers.utils.logging import get_logger
+
+from .text_image_pair_dataset import TextImagePair, worker_init_fn
+
 logger = get_logger("transformers")
 
 
 def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, logs, **kwargs):
     control.should_log = False
     return self.call_event("on_log", args, state, control, logs=logs, **kwargs)
+
+
 CallbackHandler.on_log = on_log
 
 SAFE_WEIGHTS_NAME = "model.safetensors"
@@ -109,12 +114,22 @@ class VisualDLWithImageCallback(TrainerCallback):
         ):
             max_batch = 4 if args.resolution > 256 else 8
 
-            image_logs["reconstruction"] = model.decode_image(pixel_values=inputs["pixel_values"].to(args.device), max_batch=max_batch)
+            image_logs["reconstruction"] = model.decode_image(
+                pixel_values=inputs["pixel_values"].to(args.device), max_batch=max_batch
+            )
             image_logs["ddim-samples-1.0"] = model.log_image(
-                input_ids=inputs["input_ids"].to(args.device), guidance_scale=1.0, height=args.resolution, width=args.resolution, max_batch=max_batch
+                input_ids=inputs["input_ids"].to(args.device),
+                guidance_scale=1.0,
+                height=args.resolution,
+                width=args.resolution,
+                max_batch=max_batch,
             )
             image_logs["ddim-samples-7.5"] = model.log_image(
-                input_ids=inputs["input_ids"].to(args.device), guidance_scale=7.5, height=args.resolution, width=args.resolution, max_batch=max_batch
+                input_ids=inputs["input_ids"].to(args.device),
+                guidance_scale=7.5,
+                height=args.resolution,
+                width=args.resolution,
+                max_batch=max_batch,
             )
 
         if not state.is_world_process_zero:
@@ -144,6 +159,7 @@ class VisualDLWithImageCallback(TrainerCallback):
         if self.vdl_writer:
             self.vdl_writer.close()
             self.vdl_writer = None
+
 
 class AverageStatistical(object):
     def __init__(self):
@@ -225,8 +241,10 @@ class BenchmarkCallback(TrainerCallback):
             train_epoch_cost = time.time() - self.epoch_start
             logger.info("train epoch: %d, epoch_cost: %.5f s" % (state.epoch, train_epoch_cost))
 
+
 # register visualdl_with_image
 INTEGRATION_TO_CALLBACK.update({"custom_visualdl": VisualDLWithImageCallback})
+
 
 class StableDiffusionTrainer(Trainer):
     def __init__(self, **kwargs):
@@ -698,7 +716,7 @@ class StableDiffusionTrainer(Trainer):
         self.control = self.callback_handler.on_train_end(args, self.state, self.control)
 
         return TrainOutput(self.state.global_step, train_loss, metrics)
-            
+
     def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval, **kwargs):
         if self.control.should_log:
             if is_torch_tpu_available():
@@ -729,7 +747,7 @@ class StableDiffusionTrainer(Trainer):
                     num_steps=num_steps,
                 )
             )
-            
+
             self._total_loss_scalar += tr_loss_scalar
             self._globalstep_last_logged = self.state.global_step
             self._globalstep_last_start_time = time.time()
@@ -761,7 +779,7 @@ class StableDiffusionTrainer(Trainer):
         if self.control.should_save:
             self._save_checkpoint(model, trial, metrics=metrics)
             self.control = self.callback_handler.on_save(self.args, self.state, self.control)
-            
+
     def log(self, logs: Dict[str, float], **kwargs) -> None:
         if self.state.epoch is not None:
             logs["epoch"] = round(self.state.epoch, 2)
@@ -770,7 +788,7 @@ class StableDiffusionTrainer(Trainer):
         self.state.log_history.append(output)
         self.control = self.callback_handler.on_log(self.args, self.state, self.control, logs, **kwargs)
 
-    def _save(self, output_dir = None, state_dict=None):
+    def _save(self, output_dir=None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
         if self.args.only_save_updated_model:
@@ -794,6 +812,7 @@ class StableDiffusionTrainer(Trainer):
             logger.info("Trainer.model is not a `PreTrainedModel`, only saving its state dict.")
             if self.args.save_safetensors:
                 import safetensors
+
                 safetensors.torch.save_file(state_dict, os.path.join(output_dir, SAFE_WEIGHTS_NAME))
             else:
                 torch.save(state_dict, os.path.join(output_dir, WEIGHTS_NAME))
@@ -802,4 +821,3 @@ class StableDiffusionTrainer(Trainer):
                 self.tokenizer.save_pretrained(output_dir)
 
             torch.save(self.args, os.path.join(output_dir, TRAINING_ARGS_NAME))
-            

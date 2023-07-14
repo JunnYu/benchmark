@@ -17,14 +17,8 @@ import inspect
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from diffusers import AutoencoderKL, DDIMScheduler, DDPMScheduler, UNet2DConditionModel
 from transformers import AutoTokenizer, CLIPTextModel
-from diffusers import (
-    AutoencoderKL,
-    DDIMScheduler,
-    DDPMScheduler,
-    UNet2DConditionModel,
-)
 from transformers.utils.logging import get_logger
 
 logger = get_logger("transformers")
@@ -34,28 +28,29 @@ class LitEma(nn.Module):
     def __init__(self, model, decay=0.9999, use_num_upates=True):
         super().__init__()
         if decay < 0.0 or decay > 1.0:
-            raise ValueError('Decay must be between 0 and 1')
+            raise ValueError("Decay must be between 0 and 1")
 
         self.m_name2s_name = {}
-        self.register_buffer('decay', torch.tensor(decay, dtype=torch.float32))
-        self.register_buffer('num_updates', torch.tensor(0,dtype=torch.int) if use_num_upates
-                             else torch.tensor(-1,dtype=torch.int))
+        self.register_buffer("decay", torch.tensor(decay, dtype=torch.float32))
+        self.register_buffer(
+            "num_updates", torch.tensor(0, dtype=torch.int) if use_num_upates else torch.tensor(-1, dtype=torch.int)
+        )
 
         for name, p in model.named_parameters():
             if p.requires_grad:
-                #remove as '.'-character is not allowed in buffers
-                s_name = name.replace('.','')
-                self.m_name2s_name.update({name:s_name})
-                self.register_buffer(s_name,p.clone().detach().data)
+                # remove as '.'-character is not allowed in buffers
+                s_name = name.replace(".", "")
+                self.m_name2s_name.update({name: s_name})
+                self.register_buffer(s_name, p.clone().detach().data)
 
         self.collected_params = []
 
-    def forward(self,model):
+    def forward(self, model):
         decay = self.decay
 
         if self.num_updates >= 0:
             self.num_updates += 1
-            decay = min(self.decay,(1 + self.num_updates) / (10 + self.num_updates))
+            decay = min(self.decay, (1 + self.num_updates) / (10 + self.num_updates))
 
         one_minus_decay = 1.0 - decay
 
@@ -69,7 +64,7 @@ class LitEma(nn.Module):
                     shadow_params[sname] = shadow_params[sname].type_as(m_param[key])
                     shadow_params[sname].sub_(one_minus_decay * (shadow_params[sname] - m_param[key]))
                 else:
-                    assert not key in self.m_name2s_name
+                    assert key not in self.m_name2s_name
 
     def copy_to(self, model):
         m_param = dict(model.named_parameters())
@@ -78,7 +73,7 @@ class LitEma(nn.Module):
             if m_param[key].requires_grad:
                 m_param[key].data.copy_(shadow_params[self.m_name2s_name[key]].data)
             else:
-                assert not key in self.m_name2s_name
+                assert key not in self.m_name2s_name
 
     def store(self, parameters):
         """
@@ -103,6 +98,7 @@ class LitEma(nn.Module):
         for c_param, param in zip(self.collected_params, parameters):
             param.data.copy_(c_param.data)
         self.collected_params = None
+
 
 class StableDiffusionModel(nn.Module):
     def __init__(self, model_args):
@@ -132,7 +128,9 @@ class StableDiffusionModel(nn.Module):
         tokenizer_kwargs = {}
         if model_args.model_max_length is not None:
             tokenizer_kwargs["model_max_length"] = model_args.model_max_length
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, **tokenizer_kwargs, subfolder="tokenizer", use_fast=False)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name_or_path, **tokenizer_kwargs, subfolder="tokenizer", use_fast=False
+        )
         self.vae = AutoencoderKL.from_pretrained(vae_name_or_path, subfolder="vae")
         self.text_encoder = CLIPTextModel.from_pretrained(text_encoder_name_or_path, subfolder="text_encoder")
         try:
@@ -178,6 +176,29 @@ class StableDiffusionModel(nn.Module):
         self.use_ema = False
         self.model_ema = None
 
+    def compute_snr(self, timesteps):
+        """
+        Computes SNR as per https://github.com/TiankaiHang/Min-SNR-Diffusion-Training/blob/521b624bd70c67cee4bdf49225915f5945a872e3/guided_diffusion/gaussian_diffusion.py#L847-L849
+        """
+        sqrt_alphas_cumprod = self.alphas_cumprod**0.5
+        sqrt_one_minus_alphas_cumprod = (1.0 - self.alphas_cumprod) ** 0.5
+
+        # Expand the tensors.
+        # Adapted from https://github.com/TiankaiHang/Min-SNR-Diffusion-Training/blob/521b624bd70c67cee4bdf49225915f5945a872e3/guided_diffusion/gaussian_diffusion.py#L1026
+        sqrt_alphas_cumprod = sqrt_alphas_cumprod.to(device=timesteps.device)[timesteps].float()
+        while len(sqrt_alphas_cumprod.shape) < len(timesteps.shape):
+            sqrt_alphas_cumprod = sqrt_alphas_cumprod[..., None]
+        alpha = sqrt_alphas_cumprod.expand(timesteps.shape)
+
+        sqrt_one_minus_alphas_cumprod = sqrt_one_minus_alphas_cumprod.to(device=timesteps.device)[timesteps].float()
+        while len(sqrt_one_minus_alphas_cumprod.shape) < len(timesteps.shape):
+            sqrt_one_minus_alphas_cumprod = sqrt_one_minus_alphas_cumprod[..., None]
+        sigma = sqrt_one_minus_alphas_cumprod.expand(timesteps.shape)
+
+        # Compute SNR.
+        snr = (alpha / sigma) ** 2
+        return snr
+
     def forward(self, input_ids=None, pixel_values=None, **kwargs):
         self.vae.eval()
         if not self.model_args.train_text_encoder:
@@ -186,21 +207,36 @@ class StableDiffusionModel(nn.Module):
         # vae encode
         latents = self.vae.encode(pixel_values).latent_dist.sample()
         latents = latents * self.vae.config.scaling_factor
+
+        # Sample noise that we'll add to the latents
         noise = torch.randn(latents.shape, device=latents.device)
         if self.model_args.noise_offset:
             # https://www.crosslabs.org//blog/diffusion-with-offset-noise
             noise += self.model_args.noise_offset * torch.randn(
                 (latents.shape[0], latents.shape[1], 1, 1), dtype=noise.dtype, device=noise.device
             )
-        timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (latents.shape[0],), dtype=torch.long,
-                device=latents.device)
-        noisy_latents = self.add_noise(latents, noise, timesteps)
+        if self.model_args.input_perturbation:
+            new_noise = noise + self.model_args.input_perturbation * torch.randn_like(noise)
+
+        timesteps = torch.randint(
+            0,
+            self.noise_scheduler.config.num_train_timesteps,
+            (latents.shape[0],),
+            dtype=torch.long,
+            device=latents.device,
+        )
+        # Add noise to the latents according to the noise magnitude at each timestep
+        # (this is the forward diffusion process)
+        if self.model_args.input_perturbation:
+            noisy_latents = self.add_noise(latents, new_noise, timesteps)
+        else:
+            noisy_latents = self.add_noise(latents, noise, timesteps)
 
         # text encode
         encoder_hidden_states = self.text_encoder(input_ids)[0]
 
         # unet
-        noise_pred = self.unet(
+        model_pred = self.unet(
             sample=noisy_latents, timestep=timesteps, encoder_hidden_states=encoder_hidden_states
         ).sample
 
@@ -213,8 +249,22 @@ class StableDiffusionModel(nn.Module):
             raise ValueError(f"Unknown prediction type {self.model_args.prediction_type}")
 
         # compute loss
-        loss = F.mse_loss(noise_pred.float(), target.float(), reduction="none").mean([1, 2, 3]).mean()
-
+        if self.model_args.snr_gamma is None:
+            loss = F.mse_loss(model_pred.float(), target.float(), reduction="none").mean([1, 2, 3]).mean()
+        else:
+            # Compute loss-weights as per Section 3.4 of https://arxiv.org/abs/2303.09556.
+            # Since we predict the noise instead of x_0, the original formulation is slightly changed.
+            # This is discussed in Section 4.2 of the same paper.
+            snr = self.compute_snr(timesteps)
+            mse_loss_weights = (
+                torch.stack([snr, self.model_args.snr_gamma * torch.ones_like(timesteps)], dim=1).min(dim=1)[0] / snr
+            )
+            # We first calculate the original loss. Then we mean over the non-batch dimensions and
+            # rebalance the sample-wise losses with their respective loss weights.
+            # Finally, we take the mean of the rebalanced loss.
+            loss = F.mse_loss(model_pred.float(), target.float(), reduction="none")
+            loss = loss.mean(dim=list(range(1, len(loss.shape)))) * mse_loss_weights
+            loss = loss.mean()
         return loss
 
     def add_noise(
@@ -303,7 +353,9 @@ class StableDiffusionModel(nn.Module):
                 uncond_embeddings = self.text_encoder(uncond_input.input_ids.to(device=input_ids.device))[0]
                 text_embeddings = torch.cat([uncond_embeddings, text_embeddings], dim=0)
 
-            latents = torch.randn((input_ids.shape[0], self.unet.config.in_channels, height // 8, width // 8)).to(device=input_ids.device)
+            latents = torch.randn((input_ids.shape[0], self.unet.config.in_channels, height // 8, width // 8)).to(
+                device=input_ids.device
+            )
             latents = latents * self.eval_scheduler.init_noise_sigma
             accepts_eta = "eta" in set(inspect.signature(self.eval_scheduler.step).parameters.keys())
             extra_step_kwargs = {}

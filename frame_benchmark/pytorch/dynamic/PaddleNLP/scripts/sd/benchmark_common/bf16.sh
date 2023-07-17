@@ -23,7 +23,7 @@ export LD_LIBRARY_PATH=/usr/local/cuda/compat:$LD_LIBRARY_PATH
 export FLAG_USE_EMA=0
 export FLAG_RECOMPUTE=1
 export FLAG_BENCHMARK=1
-export FLAG_USE_EMA=1
+export FLAG_USE_EMA=0
 
 export OUTPUT_DIR="bf16_torch"
 export BATCH_SIZE=64

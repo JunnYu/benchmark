@@ -94,7 +94,7 @@ function _train(){
             --save_total_limit 50 \
             --seed 23 \
             --dataloader_num_workers 8 \
-            --pretrained_model_name_or_path ./CompVis-stable-diffusion-v1-4 \
+            --pretrained_model_name_or_path ./CompVis-stable-diffusion-v1-4-paddle-init \
             --file_list ./data/filelist/train.filelist.list \
             --model_max_length 77 \
             --max_grad_norm -1 \
@@ -124,7 +124,7 @@ function _train(){
             --save_total_limit 50 \
             --seed 23 \
             --dataloader_num_workers 8 \
-            --pretrained_model_name_or_path ./CompVis-stable-diffusion-v1-4 \
+            --pretrained_model_name_or_path ./CompVis-stable-diffusion-v1-4-paddle-init \
             --file_list ./data/filelist/train.filelist.list \
             --model_max_length 77 \
             --max_grad_norm -1 \

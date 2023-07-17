@@ -44,10 +44,10 @@ tar -zxvf CompVis-stable-diffusion-v1-4-paddle-init-pt.tar.gz
 # wget https://bj.bcebos.com/paddlenlp/models/community/CompVis/CompVis-stable-diffusion-v1-4-pt.tar.gz
 # tar -zxvf CompVis-stable-diffusion-v1-4-pt.tar.gz
 
-# rm -rf laion400m_demo_data.tar.gz
-# rm -rf data
-# wget https://paddlenlp.bj.bcebos.com/models/community/junnyu/develop/laion400m_demo_data.tar.gz
-# tar -zxvf laion400m_demo_data.tar.gz
+rm -rf laion400m_demo_data.tar.gz
+rm -rf data
+wget https://paddlenlp.bj.bcebos.com/models/community/junnyu/develop/laion400m_demo_data.tar.gz
+tar -zxvf laion400m_demo_data.tar.gz
 
 # 解决compile下报错的问题
 # ln -s /usr/include/python3.10 /usr/local/include/ 

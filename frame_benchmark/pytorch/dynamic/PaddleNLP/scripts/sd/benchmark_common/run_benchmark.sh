@@ -90,7 +90,7 @@ function _train(){
             --warmup_steps 0 \
             --logging_steps 10 \
             --save_steps 999999 \
-            --resolution 512 \
+            --resolution 256 \
             --save_total_limit 50 \
             --seed 23 \
             --dataloader_num_workers 8 \
@@ -119,7 +119,7 @@ function _train(){
             --lr_scheduler_type "constant" \
             --warmup_steps 0 \
             --logging_steps 10 \
-            --resolution 512 \
+            --resolution 256 \
             --save_steps 999999 \
             --save_total_limit 50 \
             --seed 23 \
